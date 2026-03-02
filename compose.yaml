@@ -1,0 +1,41 @@
+
+services:
+  app:
+    image: lykalon/app:v1
+    depends_on:
+      db:
+        condition: service_healthy
+    container_name: lykalon
+    hostname: app
+    networks:
+      - containersnet
+    ports:
+      - 8080:8080
+    environment:
+      - STORAGE=postgres # local
+      - PG_CONNECTION_STRING=postgres://app:some_pwd@db:5432/appdatabase
+    
+  db:
+    image: postgres:latest
+    restart : always
+    shm_size: 128mb
+    container_name: db
+    hostname: db
+    networks:
+      - containersnet
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=some_pwd
+      - POSTGRES_USER=app
+      - POSTGRES_DB=appdatabase
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d appdatabase"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+
+networks:
+  containersnet:
+    driver: bridge
